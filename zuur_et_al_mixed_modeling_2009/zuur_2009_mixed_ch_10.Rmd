@@ -1,0 +1,191 @@
+---
+title: "Zuur et al. 2009 Mixed Modeling Walkthrough"
+subtitle: "Chapter 10"
+author: "Michael France Nelson"
+date: "6/17/2021"
+output: 
+  html_notebook:
+  toc: true
+  toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Packages
+
+```{r packages}
+require(here)
+require(data.table)
+require(DT)
+
+```
+
+
+## Boars {.tabset}
+
+```{r load_data}
+dat_dir = here("book_data", "zuur_et_al_2009")
+boars = fread(file.path(dat_dir, "Boar.txt"))
+DT::datatable(boars)
+```
+### Boars plots
+
+```{r boars_exploratory}
+{
+  par(mfrow = c(1, 2))
+  boxplot(LengthCT ~ Tb, data = boars)
+  plot(Tb ~ LengthCT, data = boars)
+  abline(lm(Tb ~ LengthCT, data = boars))
+}
+
+```
+
+
+### Boars Modeling Goal Plan
+
+1. An assumption on the distribution of the response variable $Y_i$.
+* This also defines the mean and variance of $Y_i$.
+2. Specification of the systematic part. This is a function of the explanatory variables.
+3. The relationship between the mean value of Yi and the systematic part. 
+* This is also called the link between the mean and the systematic part.
+
+
+#### Variables
+
+- The predictor is the head/body length (LengthCT~i~)
+- The response is whether or not an individual has TB
+
+#### Distribution of Response
+
+$Y_i$ is $binomial(1, \pi_i)$
+
+- Mean is $1 \times \pi_i$
+- Variance is $\pi_i \times (1 - \pi_i)$
+
+#### Predictor Function: Systematic part
+
+Use a linear predictor function $\eta()$.
+
+
+
+$\eta(LengthCT_i) = \alpha + \beta \times LengthCT_i$
+
+
+#### Relationship between expected values and predictors
+
+- Logit link function:
+- 'Log of the odds (ratio)'
+
+The odds is the ratio between the probability that it has TB and the probability it does not: $O_i = \frac{\pi_i}{1 - \pi_i}$
+
+Use an exponential function to model the odds:
+* In this case we'll use an exponential function for $\eta()$
+
+$O_i = exp( \alpha + \beta \times LengthCT_i) = \frac{\pi_i}{1 - \pi_i}$
+
+And the logarithm:
+
+* $log(O_i) = \alpha + \beta \times LengthCT_i = log(\frac{\pi_i}{1 - \pi_i})$
+
+Shorthand is:
+
+* $log(O_i) = logit(\pi_i) = \alpha + \beta \times LengthCT_i = \eta(X_i)$
+
+Solving for $\pi_i$:
+
+Let $X_i = \alpha + \beta \times LengthCT_i$
+
+* $X_i = log(\frac{\pi_i}{1 - \pi_i})$
+* $e^{X_i} = \frac{\pi_i}{1 - \pi_i}$
+* $(1 - \pi_i)e^{X_i} = \pi_i$
+* $e^{X_i} - \pi_ie^{X_i} = \pi_i$
+* $e^{X_i} = \pi_i + \pi_ie^{X_i}$
+* $e^{X_i} = \pi_i (1 + e^{X_i})$
+* $\pi_i = \frac{e^{X_i}}{1 + e^{X_i}}$
+* $e^{X_i} = \frac{\pi_i}{1 - (e^{X_i} - \pi_ie^{X_i})}$
+
+#### Boar GLM
+
+```{r boar_glm_fit}
+boar_fit_1 = glm(
+  Tb ~ LengthCT, 
+  family = binomial,
+  data = boars)
+summary(boar_fit_1)
+```
+
+Plot the model fit
+
+```{r boar_glm_model_fit_plot}
+new_dat = data.frame(LengthCT = seq(from = 46.5, to = 165, by = 1))
+new_dat$Tb_pred = predict(
+  boar_fit_1, newdata = new_dat,
+  type = "response")
+
+{
+  plot(Tb ~ LengthCT, data = boars)
+  lines(Tb_pred ~ LengthCT, data = new_dat)
+}
+```
+
+
+# Cod {.tabset}
+
+
+
+# GLM for Proportions from counts
+
+## Deer Data
+
+
+
+```{r load_deer_data}
+deer = fread(file.path(dat_dir, "Tbdeer.txt"))
+deer[, DeerNegCervi := (DeerSampledCervi - DeerPosCervi)]
+deer[, fFenced := factor(Fenced)]
+names(deer)
+
+DT::datatable(deer)
+
+```
+
+### Collinearity Check
+
+Use the authors' function:
+
+```{r}
+source(file.path(dat_dir, "HighstatLibV10.R"))
+
+corvif(deer)
+
+```
+
+
+### Fit a GLM
+
+```{r deer_binomial_glm}
+deer_fit_1 = glm(
+  cbind(DeerPosCervi, DeerNegCervi) ~
+    OpenLand + 
+    ScrubLand + 
+    QuercusPlants +
+    QuercusTrees + 
+    ReedDeerIndex + 
+    EstateSize + 
+    fFenced,
+  family = binomial, data = deer)
+
+summary(deer_fit_1)
+```
+
+
+```{r deer_model_collinearity}
+require(rms)
+require(mctest)
+
+
+```
+

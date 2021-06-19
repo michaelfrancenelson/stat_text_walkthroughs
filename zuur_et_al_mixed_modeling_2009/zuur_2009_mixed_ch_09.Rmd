@@ -1,0 +1,86 @@
+---
+title: "Zuur et al. 2009 Mixed Modeling Walkthrough"
+subtitle: "Chapter 9: GLM and GAM for Count Data"
+author: "Michael France Nelson"
+date: "6/17/2021"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+
+## Packages
+
+```{r packages}
+require(here)
+require(data.table)
+require(DT)
+
+```
+
+
+# Generalized Linear Model Structure
+
+Three steps/components:
+
+1. Distribution of the response
+2. Specifying the systematic component using the explanatory variables
+3. Specifying the link between the model of the means of the response and the systematic part
+
+
+
+## Dual Model of the Response Variable
+
+A dual-model of the response:
+
+* Model of mean
+* Model of variance
+
+## Systematic Part: Predictor Function $\eta()$
+
+
+
+# Poisson GLM Example with log link
+
+
+
+## Simulate Data
+
+```{r simulate_counts}
+
+pois_simulator_1 = function(x0, x1, alpha, beta, n = 1)
+{
+  x = rep(x0:x1, each = n)
+  data.frame(
+    x = x,
+    y = rpois(length(x), lambda = exp(alpha + beta * x)))
+}
+
+
+plot(y ~ x, pois_simulator_1(0, 100, 0.01, 0.03, 2000), pch = 16, col = adjustcolor("steelblue", 0.1))
+curve(exp(0.01+ 0.03*x), add = TRUE)
+
+```
+
+Create the data, plot, and fit a model:
+
+```{r}
+dat = pois_simulator_1(0, 200, 0.01, 0.03, 5000)
+fit_1 = glm(y ~ x, data = dat, family = poisson)
+summary(fit_1)
+
+```
+
+
+
+

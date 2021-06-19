@@ -1,0 +1,97 @@
+---
+title: "Zuur et al. 2009 Mixed Modeling Walkthrough"
+subtitle: "Chapter 8: Meet the exponential family"
+author: "Michael France Nelson"
+date: "6/17/2021"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+
+## Packages
+
+```{r packages}
+require(here)
+require(data.table)
+require(DT)
+
+```
+
+
+## Sparrows {.tabset}
+
+Read data file
+
+```{r load_data}
+dat_dir = here("book_data", "zuur_et_al_2009")
+sparrows = fread(file.path(dat_dir, "Sparrows.txt"))
+DT::datatable(sparrows)
+```
+### Sparrows plots
+
+```{r sparrows_exploratory}
+{
+  par(mfrow = c(1, 2))
+  {
+    
+  boxplot(wt ~ Sex, data = sparrows)
+  hist(sparrows$wt, main = "Weight")
+  }
+}
+
+```
+
+
+
+
+## Poisson vs. Negative Binomial
+
+
+
+Prob mass plotting functions
+
+```{r plot_funs}
+barnegbinom = function(x1, mu, k, x0 = 0, main_fmt = "NB(%s, %s)", ...)
+{
+  barplot(
+    dnbinom(x0:x1,size = k, prob = k / (k + mu) ), space = 0,
+    main = sprintf(main_fmt, mu, k),
+    names.arg = 0:x1, ...)
+}
+
+barpois = function(x1, mu, x0 = 0, main_fmt = "Pois(%s)", ...)
+{
+  barplot(
+    dpois(x0:x1, lambda = mu),
+    space = 0, names.arg = 0:x1, 
+    main = sprintf(main_fmt, mu), ...)
+}
+
+```
+
+Prob. mass plots:
+
+
+```{r neg_binom_pois_plots}
+
+barpois(10, mu)
+barnegbinom(100, mu, k)
+barnegbinom(200, 100, 1e6)
+```
+
+
+
+
+
+
