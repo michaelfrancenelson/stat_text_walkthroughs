@@ -19,12 +19,17 @@ knitr::opts_chunk$set(message = FALSE)
 ```
 
 
-## Packages
+## Packages and Data
 
-```{r packages}
+```{r packages_and_data}
 require(here)
 require(data.table)
 require(DT)
+
+dat_dir = here("book_data", "zuur_et_al_2009")
+RK = fread(file.path(dat_dir, "RoadKills.txt"))
+
+
 
 ```
 
@@ -74,7 +79,7 @@ curve(exp(0.01+ 0.03*x), add = TRUE)
 
 Create the data, plot, and fit a model:
 
-```{r}
+```{r plot_sim_data}
 dat = pois_simulator_1(0, 200, 0.01, 0.03, 5000)
 fit_1 = glm(y ~ x, data = dat, family = poisson)
 summary(fit_1)
@@ -83,4 +88,89 @@ summary(fit_1)
 
 
 
+
+# Road Kill Amphibions
+
+
+```{r road_kill_model_1}
+plot(TOT.N ~ D.PARK, data = RK)
+fit_1 = glm(
+  TOT.N ~ D.PARK, data = RK, family = poisson)
+
+
+
+
+summary(fit_1)
+
+logLik(fit_1)
+
+```
+
+
+## Saturated Model
+
+```{r saturated}
+RK$saturated = factor(1:nrow(RK))
+fit_sat = glm(TOT.N ~ saturated, data = RK, family = poisson)
+fit_null = glm(TOT.N ~ 1, data = RK, family = poisson)
+
+summary(fit_sat)
+summary(fit_null)
+summary(fit_1)
+
+2 * (logLik(fit_sat) - logLik(fit_1))
+2 * (logLik(fit_sat) - logLik(fit_null))
+
+```
+
+
+
+
+## Plot model
+
+```{r plot_model_1}
+plot(TOT.N ~ D.PARK, data = RK)
+x = seq(0, 25000, length.out = 100)
+pred_vals = data.frame(
+  x,
+  predict(
+    fit_1,
+    newdata = data.frame(
+      D.PARK = x),
+    se.fit = TRUE,
+    type = "response"))
+lines(fit ~ x, data = pred_vals)
+
+lines(fit + qnorm(0.025) * se.fit  ~ x, data = pred_vals)
+lines(fit - qnorm(0.025) * se.fit  ~ x, data = pred_vals)
+
+```
+
+
+
+
+```{r model_2}
+RK$SQ.POLIC <- sqrt(RK$POLIC)
+RK$SQ.WATRES <- sqrt(RK$WAT.RES)
+RK$SQ.URBAN <- sqrt(RK$URBAN)
+RK$SQ.OLIVE <- sqrt(RK$OLIVE)
+RK$SQ.LPROAD <- sqrt(RK$L.P.ROAD)
+RK$SQ.SHRUB <- sqrt(RK$SHRUB)
+RK$SQ.DWATCOUR <- sqrt(RK$D.WAT.COUR)
+M2 <- glm(TOT.N ~ OPEN.L + MONT.S + SQ.POLIC +
+D.PARK + SQ.SHRUB + SQ.WATRES + L.WAT.C +
+SQ.LPROAD + SQ.DWATCOUR, family = poisson,
+data = RK)
+summary(M2)
+
+
+```
+
+```{r model_selection_1}
+
+
+step(M2)
+drop1(M2, test = "Chi")
+drop1(M2)
+```
 
